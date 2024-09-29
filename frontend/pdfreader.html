@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>PDF Reader</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script> <!-- PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script> <!-- Hammer.js for gestures -->
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+        }
+        #home-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            text-decoration: none;
+            font-size: 14px;
+            z-index: 100;
+        }
+        #home-button:hover {
+            background-color: #45a049;
+        }
+        #controls {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 100;
+        }
+        #controls input {
+            width: 40px;
+            padding: 4px;
+            text-align: center;
+        }
+        #pdf-container {
+            width: 100%;
+            height: 100vh;
+            overflow: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            touch-action: pan-y; /* Allow vertical scrolling on touch devices */
+        }
+        canvas {
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            max-width: 100%; /* Limit canvas to screen width */
+        }
+    </style>
+</head>
+<body>
+
+    <a id="home-button" href="index.html">Home</a> <!-- Home button -->
+
+    <!-- Goto page controls -->
+    <div id="controls">
+        <input type="text" id="page-input" placeholder="Page" />
+        <button id="goto-page-button">Go to Page</button>
+    </div>
+
+    <div id="pdf-container"></div>
+
+    <script>
+        let pdfDocument = null;  // Stores the PDF document
+        let totalPages = 0;      // Total number of pages
+        let scale = 1.5;         // Default scaling for desktop
+        let currentZoom = scale; // Store current zoom level
+        let isMobile = window.innerWidth <= 768; // Detect mobile devices
+
+        // Adjust scale for mobile
+        if (isMobile) {
+            scale = window.innerWidth / 800; // Scale based on screen width
+        }
+
+        // Function to render a single page
+        function renderPage(pageNumber) {
+            pdfDocument.getPage(pageNumber).then(function(page) {
+                const viewport = page.getViewport({ scale: currentZoom });
+
+                // Create or reuse the canvas for the page
+                let canvas = document.querySelector(`canvas[data-page-number='${pageNumber}']`);
+                if (!canvas) {
+                    canvas = document.createElement('canvas');
+                    canvas.setAttribute('data-page-number', pageNumber);
+                    document.getElementById('pdf-container').appendChild(canvas);
+                }
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                // Render the page into the canvas
+                const renderContext = {
+                    canvasContext: context,
+                    viewport: viewport
+                };
+                page.render(renderContext);
+            });
+        }
+
+        // Function to render all pages initially
+        function renderAllPages() {
+            for (let pageNumber = 1; pageNumber <= totalPages; pageNumber++) {
+                renderPage(pageNumber);
+            }
+        }
+
+        // Load the PDF and render all pages
+        if (window.location.pathname.endsWith('pdfreader.html')) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pdfFile = urlParams.get('file');
+
+            if (pdfFile) {
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+                const loadingTask = pdfjsLib.getDocument(decodeURIComponent(pdfFile));
+                loadingTask.promise.then(function(pdf) {
+                    pdfDocument = pdf;
+                    totalPages = pdf.numPages;
+
+                    // Render all pages initially
+                    renderAllPages();
+
+                    // Check local storage for the last read page of this specific book
+                    const savedPage = localStorage.getItem(`visiblePage_${pdfFile}`);
+                    if (savedPage) {
+                        const pageNumber = parseInt(savedPage);
+                        if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
+                            const pdfContainer = document.getElementById('pdf-container');
+                            const scrollToPage = () => {
+                                const canvasElements = pdfContainer.getElementsByTagName('canvas');
+                                if (canvasElements.length >= totalPages) {
+                                    if (canvasElements[pageNumber - 1]) {
+                                        canvasElements[pageNumber - 1].scrollIntoView({ behavior: 'smooth' });
+                                    }
+                                } else {
+                                    requestAnimationFrame(scrollToPage);
+                                }
+                            };
+                            scrollToPage();
+                        }
+                    }
+
+                    // Handle scrolling to update the current page in the textbox
+                    const pdfContainer = document.getElementById('pdf-container');
+                    pdfContainer.addEventListener('scroll', function() {
+                        const canvasElements = pdfContainer.getElementsByTagName('canvas');
+                        let visiblePage = 1;
+                        const viewportCenter = window.innerHeight / 2;
+                        for (let i = 0; i < canvasElements.length; i++) {
+                            const canvas = canvasElements[i];
+                            const rect = canvas.getBoundingClientRect();
+                            if (rect.top <= viewportCenter && rect.bottom >= viewportCenter) {
+                                visiblePage = i + 1;
+                                break;
+                            }
+                        }
+                        document.getElementById('page-input').value = visiblePage;  // Update textbox
+                        // Save the current page number to local storage
+                        localStorage.setItem(`visiblePage_${pdfFile}`, visiblePage);
+                    });
+
+                    // Implement pinch-to-zoom on mobile devices with re-rendering
+                    if (isMobile) {
+                        const pdfContainer = document.getElementById('pdf-container');
+                        const hammer = new Hammer(pdfContainer);
+                        hammer.get('pinch').set({ enable: true });
+
+                        hammer.on('pinch', (ev) => {
+                            const newZoom = currentZoom * ev.scale;
+                            if (newZoom >= 0.5 && newZoom <= 3) { // Limit zoom scale
+                                currentZoom = newZoom;
+                                renderAllPages(); // Re-render all pages at the new zoom level
+                            }
+                        });
+
+                        hammer.on('pinchend', () => {
+                            // Set the final zoom level after pinch ends
+                            renderAllPages();
+                        });
+                    }
+                }).catch(function(error) {
+                    console.error("Error loading PDF: " + error.message);
+                });
+            } else {
+                console.error('No PDF file specified in the query parameters.');
+            }
+        }
+
+        // Go to the page entered in the textbox when the button is clicked
+        document.getElementById('goto-page-button').addEventListener('click', function() {
+            const inputPage = parseInt(document.getElementById('page-input').value);
+            if (!isNaN(inputPage) && inputPage >= 1 && inputPage <= totalPages) {
+                const pdfContainer = document.getElementById('pdf-container');
+                const canvasElements = pdfContainer.getElementsByTagName('canvas');
+                if (canvasElements[inputPage - 1]) {
+                    canvasElements[inputPage - 1].scrollIntoView({ behavior: 'smooth' });
+                }
+            } else {
+                alert(`Please enter a valid page number between 1 and ${totalPages}`);
+            }
+        });
+
+    </script>
+
+</body>
+</html>

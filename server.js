@@ -62,7 +62,8 @@ function scanFolder(folderPath) {
                 filesCount: fs.readdirSync(itemPath).length,
                 totalSize: getFolderSize(itemPath)
             });
-        } else if (stats.isFile() && isAudioFile(item)) {
+        }
+        if (stats.isFile() && path.extname(item).toLowerCase() === '.mp3') {
             const relativePath = path.relative(path.join(__dirname, 'public_data'), itemPath);
             json.push({
                 type: 'file',
@@ -72,6 +73,15 @@ function scanFolder(folderPath) {
                 theme: 'Unknown', // Placeholder, you might want to extract metadata
                 duration: 0, // Placeholder, you might want to extract metadata
                 thumbnailBase64: getThumbnailBase64('public_data/audio/test.png') // Placeholder, you might want to generate a thumbnail
+            });
+        } else if (stats.isFile() && path.extname(item).toLowerCase() === '.pdf') {
+            const relativePath = path.relative(path.join(__dirname, 'public_data'), itemPath);
+            json.push({
+                type: 'file',
+                size: stats.size,
+                url: `/pdfreader.html?file=/data/${relativePath}`,
+                name: item,
+                thumbnailBase64: getThumbnailBase64('public_data/pdf/test.png') // Placeholder, you might want to generate a thumbnail
             });
         }
     });
@@ -88,12 +98,6 @@ function getThumbnailBase64(filePath) {
         console.error(`Error reading file for thumbnail: ${error.message}`);
         return '';
     }
-}
-
-// Helper function to check if a file is an audio file
-function isAudioFile(fileName) {
-    const audioExtensions = ['.mp3'];
-    return audioExtensions.includes(path.extname(fileName).toLowerCase());
 }
 
 // Helper function to get the total size of a folder
@@ -149,7 +153,7 @@ function getRandomAudioFiles(number) {
 
             if (stats.isDirectory()) {
                 scanDirectory(itemPath);
-            } else if (stats.isFile() && isAudioFile(item)) {
+            } else if (stats.isFile() && path.extname(item).toLowerCase() === '.mp3') {
                 const relativePath = path.relative(path.join(__dirname, 'public_data'), itemPath);
                 audioFiles.push({
                     type: 'file',

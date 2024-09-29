@@ -52,6 +52,19 @@ window.addEventListener('load', function() {
     }
 });
 
+window.addEventListener('load', function() {
+    if (window.location.pathname.endsWith('books.html') || window.location.pathname === '/books.html') {
+        const folder = 'books'; // Define the folder variable
+        fetch(`/get_folder?folder=${encodeURIComponent(folder)}`)
+            .then(response => response.json())
+            .then(data => {
+                populateAudioBoxes(data, "main-content");
+                console.log(data);
+            })
+            .catch(error => console.error('Error fetching folder data:', error));
+    }
+});
+
 function populateAudioBoxes(data, placeholder) {
     const mainContent = document.getElementById(placeholder);
     mainContent.innerHTML = ''; // Clear any existing content
