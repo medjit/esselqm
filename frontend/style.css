@@ -131,3 +131,21 @@ body, html {
     padding: 20px;
     margin-top: 60px; /* Adjusted to account for the fixed header */
 }
+
+/* Audio Player and Next Random Styles */
+#audio-player-div {
+    width: 100%;
+    margin-bottom: 20px; /* Space between audio player and next random */
+}
+
+#next-random-div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px; /* Space between columns */
+}
+
+#next-random-div .column {
+    flex: 1;
+    min-width: 300px; /* Minimum width for each column */
+    max-width: 100%; /* Ensure columns don't exceed container width */
+}

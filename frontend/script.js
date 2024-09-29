@@ -3,24 +3,57 @@ document.getElementById('hamburger-button').addEventListener('click', function()
     const navibar = document.getElementById('navibar');
     navibar.classList.toggle('hidden');
     document.getElementById('main-content').classList.toggle('expanded');
+    
+    // Store the state in localStorage
+    const isHidden = navibar.classList.contains('hidden');
+    localStorage.setItem('navibarState', isHidden ? 'hidden' : 'open');
 });
 
+// Restore the state from localStorage on load
+window.addEventListener('load', function() {
+    const navibarState = localStorage.getItem('navibarState');
+    const navibar = document.getElementById('navibar');
+    const mainContent = document.getElementById('main-content');
+    
+    if (navibarState === 'hidden') {
+        navibar.classList.add('hidden');
+        mainContent.classList.remove('expanded');
+    } else {
+        navibar.classList.remove('hidden');
+        mainContent.classList.add('expanded');
+    }
+});
 
 window.addEventListener('load', function() {
-    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
-        const folder = 'audio'; // Define the folder variable
-        fetch(`/get_folder?folder=${encodeURIComponent(folder)}`)
+    if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/' || window.location.pathname.endsWith('audioplayer.html') || window.location.pathname === '/audioplayer.html') {
+        let number = 33; // Define the folder variable
+        if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') { number = 70; placeholder = 'main-content'; }
+        if (window.location.pathname.endsWith('audioplayer.html') || window.location.pathname === '/audioplayer.html') { number = 70; placeholder = 'next-random-div'; }
+        fetch(`/get_random?number=${encodeURIComponent(number)}`)
             .then(response => response.json())
             .then(data => {
-                populateAudioBoxes(data);
+                populateAudioBoxes(data, placeholder);
                 console.log(data);
             })
             .catch(error => console.error('Error fetching folder data:', error));
     }
 });
 
-function populateAudioBoxes(data) {
-    const mainContent = document.getElementById('main-content');
+window.addEventListener('load', function() {
+    if (window.location.pathname.endsWith('lectures.html') || window.location.pathname === '/lectures.html') {
+        const folder = 'audio'; // Define the folder variable
+        fetch(`/get_folder?folder=${encodeURIComponent(folder)}`)
+            .then(response => response.json())
+            .then(data => {
+                populateAudioBoxes(data, "main-content");
+                console.log(data);
+            })
+            .catch(error => console.error('Error fetching folder data:', error));
+    }
+});
+
+function populateAudioBoxes(data, placeholder) {
+    const mainContent = document.getElementById(placeholder);
     mainContent.innerHTML = ''; // Clear any existing content
 
     data.forEach(item => {
@@ -73,7 +106,7 @@ if (window.location.pathname.endsWith('audioplayer.html')) {
     const audioFile = urlParams.get('file');
 
     if (audioFile) {
-        const mainContent = document.getElementById('main-content');
+        const mainContent = document.getElementById('audio-player-div');
         mainContent.innerHTML = ''; // Clear any existing content
 
         const audioPlayer = document.createElement('audio');

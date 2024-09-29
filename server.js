@@ -136,4 +136,57 @@ app.get('/get_folder', (req, res) => {
         res.status(500).send(`Error scanning folder: ${error.message}`);
     }
 });
+
+function getRandomAudioFiles(number) {
+    const audioFiles = [];
+
+    function scanDirectory(directory) {
+        const items = fs.readdirSync(directory);
+
+        items.forEach(item => {
+            const itemPath = path.join(directory, item);
+            const stats = fs.statSync(itemPath);
+
+            if (stats.isDirectory()) {
+                scanDirectory(itemPath);
+            } else if (stats.isFile() && isAudioFile(item)) {
+                const relativePath = path.relative(path.join(__dirname, 'public_data'), itemPath);
+                audioFiles.push({
+                    type: 'file',
+                    size: stats.size,
+                    url: `/audioplayer.html?file=/data/${relativePath}`,
+                    author: item, // Placeholder, you might want to extract metadata
+                    theme: 'Unknown', // Placeholder, you might want to extract metadata
+                    duration: 0, // Placeholder, you might want to extract metadata
+                    thumbnailBase64: getThumbnailBase64('public_data/audio/test.png') // Placeholder, you might want to generate a thumbnail
+                });
+            }
+        });
+    }
+
+    scanDirectory(path.join(__dirname, 'public_data/audio'));
+
+    // Shuffle the array and pick the first 'number' elements
+    const shuffled = audioFiles.sort(() => 0.5 - Math.random());
+    const selectedFiles = shuffled.slice(0, number);
+
+    return JSON.stringify(selectedFiles, null, 2);
+}
+
+// Endpoint to scan a folder and return JSON data
+app.get('/get_random', (req, res) => {
+    let number = decodeURIComponent(req.query.number);
+
+    if (!number) {
+        number = 7;
+    }
+
+    try {
+        const result = getRandomAudioFiles(number);
+        res.type('application/json');
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Error scanning folder: ${error.message}`);
+    }
+});
 //---------------------------------------- esselqm special functionality ----------------------------------------
