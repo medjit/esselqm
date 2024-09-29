@@ -1,0 +1,133 @@
+/* General Styles */
+body, html {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#main-content {
+    flex: 1;
+    padding: 20px;
+}
+
+/* Navbar Styles */
+#navibar {
+    position: fixed;
+    left: 0;
+    top: 0; /* Adjusted to align with the header */
+    bottom: 0;
+    width: 240px; /* Fixed width */
+    background-color: #585858; /* Darker color for better visibility */
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 70px 20px 20px 20px; /* Added top padding to lower items */
+    transition: transform 0.3s ease;
+}
+
+#navibar ul {
+    list-style-type: none; /* Remove list item dots */
+    padding: 0;
+}
+
+#navibar ul li {
+    margin: 10px 0;
+}
+
+#navibar ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-size: 18px; /* Increase font size */
+    display: block;
+    padding: 10px;
+    transition: background-color 0.3s ease;
+}
+
+#navibar ul li a:hover {
+    background-color: #575757; /* Add hover color effect */
+}
+
+#navibar footer {
+    margin-top: auto;
+}
+
+#navibar.hidden {
+    transform: translateX(-100%);
+}
+
+
+
+/* Search Header Styles */
+#header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #f4f4f4;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    z-index: 1; /* Ensure it stays above other content */
+    display: flex;
+    justify-content: center; /* Center items horizontally */
+    align-items: center;
+}
+
+#hamburger-button {
+    position: absolute;
+    left: 10px; /* Adjust as needed */
+}
+
+#search-bar {
+    margin-right: 10px;
+}
+
+#search-button {
+    margin-left: 10px;
+}
+
+/* Main Styles */
+#main-content {
+    margin-left: 30%;
+    padding: 20px;
+    margin-top: 60px; /* Adjusted to account for the fixed header */
+}
+
+/* Audio Box Styles */
+.audio-box {
+    width: 300px; /* Fixed width */
+    height: 200px; /* Fixed height */
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+    margin: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.audio-box:hover {
+    transform: translateY(-5px); /* Slight lift on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Enhanced shadow on hover */
+}
+
+/* Responsive Main Content */
+#main-content {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-left: 240px; /* Adjusted to account for the fixed navbar */
+    padding: 20px;
+    margin-top: 60px; /* Adjusted to account for the fixed header */
+}

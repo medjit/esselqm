@@ -2,6 +2,7 @@ const express = require('express');
 const serveIndex = require("serve-index");
 const path = require('path');
 const os = require('os');
+const fs = require('fs');
 
 const app = express();
 const PORT = 3333;
@@ -13,7 +14,7 @@ let logBuffer = Buffer.alloc(0);
 app.use((req, res, next) => {
     const ip = req.headers['cf-connecting-ip'] || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const logEntry = `${new Date().toISOString()} - ${ip} - ${req.method} - ${req.url}${os.EOL}`;
-    
+    console.log(logEntry);
     const logEntryBuffer = Buffer.from(logEntry);
     logBuffer = Buffer.concat([logBuffer, logEntryBuffer]);
 
@@ -43,5 +44,96 @@ app.listen(PORT, () => {
 });
 
 //======================================== esselqm special functionality ========================================
+// Function to scan folder and return JSON string
+function scanFolder(folderPath) {
+    const json = [];
 
+    const items = fs.readdirSync(folderPath);
+
+    items.forEach(item => {
+        const itemPath = path.join(folderPath, item);
+        const stats = fs.statSync(itemPath);
+
+        if (stats.isDirectory()) {
+            json.push({
+                type: 'folder',
+                name: item,
+                url: `/list-files?folder=${encodeURIComponent(path.join(folderPath, item))}`, // URL to fetch this folder
+                filesCount: fs.readdirSync(itemPath).length,
+                totalSize: getFolderSize(itemPath)
+            });
+        } else if (stats.isFile() && isAudioFile(item)) {
+            const relativePath = path.relative(path.join(__dirname, 'public_data'), itemPath);
+            json.push({
+                type: 'file',
+                size: stats.size,
+                url: `/audioplayer.html?file=/data/${relativePath}`,
+                author: item, // Placeholder, you might want to extract metadata
+                theme: 'Unknown', // Placeholder, you might want to extract metadata
+                duration: 0, // Placeholder, you might want to extract metadata
+                thumbnailBase64: getThumbnailBase64('public_data/audio/test.png') // Placeholder, you might want to generate a thumbnail
+            });
+        }
+    });
+
+    return JSON.stringify(json, null, 2);
+}
+
+// Function to get the base64 representation of a PNG file
+function getThumbnailBase64(filePath) {
+    try {
+        const fileBuffer = fs.readFileSync(filePath);
+        return fileBuffer.toString('base64');
+    } catch (error) {
+        console.error(`Error reading file for thumbnail: ${error.message}`);
+        return '';
+    }
+}
+
+// Helper function to check if a file is an audio file
+function isAudioFile(fileName) {
+    const audioExtensions = ['.mp3'];
+    return audioExtensions.includes(path.extname(fileName).toLowerCase());
+}
+
+// Helper function to get the total size of a folder
+function getFolderSize(folderPath) {
+    const items = fs.readdirSync(folderPath);
+    let totalSize = 0;
+
+    items.forEach(item => {
+        const itemPath = path.join(folderPath, item);
+        const stats = fs.statSync(itemPath);
+
+        if (stats.isDirectory()) {
+            totalSize += getFolderSize(itemPath);
+        } else {
+            totalSize += stats.size;
+        }
+    });
+
+    return totalSize;
+}
+
+// Endpoint to scan a folder and return JSON data
+app.get('/get_folder', (req, res) => {
+    let folderPath = decodeURIComponent(req.query.folder);
+    folderPath = 'public_data/' + folderPath;
+
+    if (!folderPath) {
+        return res.status(400).send('Folder path is required');
+    }
+
+    if (!fs.existsSync(folderPath)) {
+        return res.status(404).send('Folder not found');
+    }
+
+    try {
+        const result = scanFolder(folderPath);
+        res.type('application/json');
+        res.send(result);
+    } catch (error) {
+        res.status(500).send(`Error scanning folder: ${error.message}`);
+    }
+});
 //---------------------------------------- esselqm special functionality ----------------------------------------
